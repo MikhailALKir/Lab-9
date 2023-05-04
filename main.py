@@ -1,49 +1,55 @@
-import flask
-from flask_sqlalchemy import SQLAlchemy
+import tkinter as tk
+from sgrEq import sqr_eq
 
 
-app = flask.Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:123@localhost/test_db7'
-db = SQLAlchemy(app)
+def clicked():
+    A = float(arg_A.get())
+    B = float(arg_B.get())
+    C = float(arg_C.get())
+    lbl_result.configure(text=sqr_eq(A, B, C))
 
 
-class Message(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    text = db.Column(db.String(512), nullable=False)
-
-    def __init__(self, text, tags):
-        self.text = text
-        self.tags = [
-            Tag(text=tag) for tag in tags.split(',')
-        ]
+def close():
+    window.destroy()
 
 
-class Tag(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    text = db.Column(db.String(32), nullable=False)
+window = tk.Tk()
+window.title("Square equations super solver 3000")
+window.geometry('360x240')
+bg = tk.PhotoImage(file='../Users/50000861/AppData/Local/Temp/gradient.png')
 
-    message_id = db.Column(db.Integer, db.ForeignKey('message.id'), nullable=False)
-    message = db.relationship('Message', backref=db.backref('tags', lazy=True))
+frame = tk.Frame(window)
+frame.place(relx=0.5, rely=0.5, anchor='c')
 
+label_bg = tk.Label(frame, image=bg)
+label_bg.place(x=0, y=0)
 
-@app.route('/', methods=['GET'])
-def hello():
-    return flask.render_template('index.html', messages=Message.query.all())
+lbl_A = tk.Label(frame, text='A', font=("Arial", 30), bg='#999900')
+lbl_A.grid(column=0, row=0, padx=10, pady=20)
+arg_A = tk.Entry(frame, width=15)
+arg_A.insert(0, '1')
+arg_A.grid(column=0, row=1, padx=10, pady=20)
 
+lbl_B = tk.Label(frame, text='B', font=("Arial", 30))
+lbl_B.grid(column=1, row=0, padx=10, pady=20)
+arg_B = tk.Entry(frame, width=15)
+arg_B.insert(0, '0')
+arg_B.grid(column=1, row=1, padx=10, pady=20)
 
-@app.route('/add_message', methods=['POST'])
-def add_message():
-    text = flask.request.form['text']
-    tag = flask.request.form['tag']
-    # messages.append(Message(text, tag))
-    db.session.add(Message(text, tag))
-    db.session.commit()
+lbl_C = tk.Label(frame, text='C', font=("Arial", 30))
+lbl_C.grid(column=2, row=0, padx=10, pady=20)
+arg_C = tk.Entry(frame, width=15)
+arg_C.insert(0, '0')
+arg_C.grid(column=2, row=1, padx=10, pady=20)
 
-    return flask.redirect(flask.url_for('hello'))
+lbl_roots = tk.Label(frame, text='ROOTS:')
+lbl_roots.grid(column=0, row=2)
+lbl_result = tk.Label(frame, text='Enter the values')
+lbl_result.grid(column=2, row=2)
 
+btn = tk.Button(frame, text='Calculate', font=("Arial", 15), command=clicked)
+btn.grid(column=0, row=3)
+exit = tk.Button(frame, text='Cancel', font=("Arial", 15), command=close)
+exit.grid(column=2, row=3)
 
-
-
-with app.app_context():
-    db.create_all()
-app.run()
+window.mainloop()
