@@ -1,55 +1,42 @@
-import tkinter as tk
-from sgrEq import sqr_eq
+import flask
+from flask_sqlalchemy import SQLAlchemy
 
+app = flask.Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://localhost:5434/test_db7'
+db = SQLAlchemy(app)
 
-def clicked():
-    A = float(arg_A.get())
-    B = float(arg_B.get())
-    C = float(arg_C.get())
-    lbl_result.configure(text=sqr_eq(A, B, C))
+class Company(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(512), nullable=False)
 
+    def __init__(self, name, months):
+        self.name = name
+        self.terms = [
+            Term(months=months)
+        ]
 
-def close():
-    window.destroy()
+class Term(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    months = db.Column(db.String(32), nullable=False)
 
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    company = db.relationship('Company', backref=db.backref('terms', lazy=True))
 
-window = tk.Tk()
-window.title("Square equations super solver 3000")
-window.geometry('360x240')
-bg = tk.PhotoImage(file='../Users/50000861/AppData/Local/Temp/gradient.png')
+@app.route('/', methods=['GET'])
+def hello():
+    return flask.render_template('index.html', companies=Company.query.all())
 
-frame = tk.Frame(window)
-frame.place(relx=0.5, rely=0.5, anchor='c')
+@app.route('/add_message', methods=['POST'])
+def add_message():
+    company = flask.request.form['company']
+    months = flask.request.form['months']
 
-label_bg = tk.Label(frame, image=bg)
-label_bg.place(x=0, y=0)
+    db.session.add(Company(company, months))
+    db.session.commit()
 
-lbl_A = tk.Label(frame, text='A', font=("Arial", 30), bg='#999900')
-lbl_A.grid(column=0, row=0, padx=10, pady=20)
-arg_A = tk.Entry(frame, width=15)
-arg_A.insert(0, '1')
-arg_A.grid(column=0, row=1, padx=10, pady=20)
+    return flask.redirect(flask.url_for('hello'))
 
-lbl_B = tk.Label(frame, text='B', font=("Arial", 30))
-lbl_B.grid(column=1, row=0, padx=10, pady=20)
-arg_B = tk.Entry(frame, width=15)
-arg_B.insert(0, '0')
-arg_B.grid(column=1, row=1, padx=10, pady=20)
+with app.app_context():
+    db.create_all()
 
-lbl_C = tk.Label(frame, text='C', font=("Arial", 30))
-lbl_C.grid(column=2, row=0, padx=10, pady=20)
-arg_C = tk.Entry(frame, width=15)
-arg_C.insert(0, '0')
-arg_C.grid(column=2, row=1, padx=10, pady=20)
-
-lbl_roots = tk.Label(frame, text='ROOTS:')
-lbl_roots.grid(column=0, row=2)
-lbl_result = tk.Label(frame, text='Enter the values')
-lbl_result.grid(column=2, row=2)
-
-btn = tk.Button(frame, text='Calculate', font=("Arial", 15), command=clicked)
-btn.grid(column=0, row=3)
-exit = tk.Button(frame, text='Cancel', font=("Arial", 15), command=close)
-exit.grid(column=2, row=3)
-
-window.mainloop()
+app.run()
